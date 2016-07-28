@@ -8,24 +8,27 @@ from time import sleep
 
 import matplotlib.pyplot as plt
 import pandas as pd
-
-NVIDIA_DUMP_FILE = 'nvidia_dump.txt'
+import tempfile
 
 COLORS = ['g', 'm', 'c', 'r']
 
 
 def run_command_and_read_output():
+    temp_filename = tempfile.NamedTemporaryFile(mode='w')
+    temp_filename.close()
+    nvidia_tmp_filename = temp_filename.name
+
     command = 'nvidia-smi --query-gpu=index,timestamp,name,pci.bus_id,driver_version,pstate,pcie.link.gen.max,' \
               'pcie.link.gen.current,temperature.gpu,utilization.gpu,utilization.memory,memory.total,' \
-              'memory.free,memory.used,power.draw,clocks.sm,clocks.mem --format=csv -f {}'.format(NVIDIA_DUMP_FILE)
+              'memory.free,memory.used,power.draw,clocks.sm,clocks.mem --format=csv -f {}'.format(nvidia_tmp_filename)
     p = Popen(command, stdout=stderr, stderr=open(os.devnull, 'w'), shell=True)
     p.wait()
     assert not p.returncode, 'ERROR: Call to stanford_ner exited with a non-zero code status.'
     output = []
     sleep(1)
-    with open(NVIDIA_DUMP_FILE, 'r') as f:
+    with open(nvidia_tmp_filename, 'r') as f:
         output.extend(f.readlines()[1:])  # no headers
-    os.remove(NVIDIA_DUMP_FILE)
+    os.remove(nvidia_tmp_filename)
     gpu_count = len(output)
     return output, gpu_count
 
